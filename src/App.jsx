@@ -1,0 +1,277 @@
+import { useEffect, useMemo, useState } from 'react'
+import { onValue, ref, set, update } from 'firebase/database'
+import './App.css'
+import { createTaskList, getDateKey, getUserStats, reconcileMissedDays } from './challenge'
+import { database, isFirebaseConfigured } from './firebase'
+import { generateId } from './id'
+
+function randomId() {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID()
+  }
+  return generateId('user')
+}
+
+function ensureRoomId() {
+  const url = new URL(window.location.href)
+  const existing = url.searchParams.get('room')
+
+  if (existing) {
+    return existing
+  }
+
+  const roomId = generateId('room').slice(-8)
+  url.searchParams.set('room', roomId)
+  window.history.replaceState({}, '', url)
+  return roomId
+}
+
+function storageKeys(roomId) {
+  return {
+    name: `hard-boiled:name:${roomId}`,
+    userId: `hard-boiled:user-id:${roomId}`,
+  }
+}
+
+function App() {
+  const [roomId] = useState(() => ensureRoomId())
+  const [roomData, setRoomData] = useState({ users: {} })
+  const [nameInput, setNameInput] = useState('')
+  const [taskInput, setTaskInput] = useState('')
+  const [copyStatus, setCopyStatus] = useState('')
+
+  const keys = useMemo(() => storageKeys(roomId), [roomId])
+
+  const [userId, setUserId] = useState(() => localStorage.getItem(keys.userId) ?? '')
+  const [name, setName] = useState(() => localStorage.getItem(keys.name) ?? '')
+
+  useEffect(() => {
+    if (!isFirebaseConfigured || !database) {
+      return undefined
+    }
+
+    const roomRef = ref(database, `rooms/${roomId}`)
+
+    const unsubscribe = onValue(roomRef, (snapshot) => {
+      setRoomData(snapshot.val() ?? { users: {} })
+    })
+
+    return () => unsubscribe()
+  }, [roomId])
+
+  useEffect(() => {
+    if (!isFirebaseConfigured || !database || !name || !userId) {
+      return
+    }
+
+    const now = new Date().toISOString()
+    update(ref(database, `rooms/${roomId}`), {
+      updatedAt: now,
+      roomId,
+    })
+
+    update(ref(database, `rooms/${roomId}/users/${userId}`), {
+      id: userId,
+      name,
+      updatedAt: now,
+    })
+  }, [name, roomId, userId])
+
+  const users = Object.values(roomData.users ?? {})
+  const currentUser = useMemo(
+    () => roomData.users?.[userId] ?? { tasks: [], progress: {}, daily: {} },
+    [roomData.users, userId],
+  )
+  const todayKey = getDateKey()
+
+  useEffect(() => {
+    if (!isFirebaseConfigured || !database || !userId || !name) {
+      return
+    }
+
+    const updates = reconcileMissedDays(currentUser)
+    if (!updates) {
+      return
+    }
+
+    update(ref(database, `rooms/${roomId}/users/${userId}/progress`), updates)
+  }, [currentUser, name, roomId, userId])
+
+  const saveName = (event) => {
+    event.preventDefault()
+    const value = nameInput.trim()
+
+    if (!value) {
+      return
+    }
+
+    const resolvedUserId = userId || randomId()
+
+    localStorage.setItem(keys.name, value)
+    localStorage.setItem(keys.userId, resolvedUserId)
+
+    setName(value)
+    setUserId(resolvedUserId)
+    setNameInput('')
+  }
+
+  const saveChallenge = (event) => {
+    event.preventDefault()
+    if (!isFirebaseConfigured || !database) {
+      return
+    }
+
+    const taskLines = taskInput.split('\n')
+    const tasks = createTaskList(taskLines)
+
+    if (tasks.length === 0) {
+      return
+    }
+
+    const now = new Date().toISOString()
+
+    set(ref(database, `rooms/${roomId}/users/${userId}`), {
+      ...currentUser,
+      id: userId,
+      name,
+      tasks,
+      progress: {
+        startDate: currentUser.progress?.startDate ?? todayKey,
+        extraDays: currentUser.progress?.extraDays ?? 0,
+        lastEvaluatedDate: currentUser.progress?.lastEvaluatedDate ?? null,
+      },
+      daily: currentUser.daily ?? {},
+      updatedAt: now,
+    })
+
+    setTaskInput('')
+  }
+
+  const toggleTask = (taskId) => {
+    if (!isFirebaseConfigured || !database) {
+      return
+    }
+
+    const currentValue = currentUser.daily?.[todayKey]?.[taskId] === true
+
+    update(ref(database, `rooms/${roomId}/users/${userId}`), {
+      [`daily/${todayKey}/${taskId}`]: !currentValue,
+      updatedAt: new Date().toISOString(),
+    })
+  }
+
+  const copyRoomLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href)
+      setCopyStatus('Copied room link')
+    } catch {
+      setCopyStatus('Copy failed')
+    }
+  }
+
+  return (
+    <main className="app-shell">
+      <header className="top-bar">
+        <div>
+          <h1>Hard Boiled</h1>
+          <p>Two-player 75 Day Hard challenge tracker</p>
+        </div>
+        <button type="button" onClick={copyRoomLink} className="secondary-btn">
+          Share room
+        </button>
+      </header>
+
+      {copyStatus && <p className="status-pill">{copyStatus}</p>}
+
+      {!isFirebaseConfigured && (
+        <section className="panel warning">
+          <h2>Firebase setup required</h2>
+          <p>Add VITE_FIREBASE_* variables to run shared sync for this room.</p>
+        </section>
+      )}
+
+      {!name ? (
+        <section className="panel">
+          <h2>Choose your player name</h2>
+          <form onSubmit={saveName} className="form-stack">
+            <input
+              type="text"
+              value={nameInput}
+              onChange={(event) => setNameInput(event.target.value)}
+              placeholder="Your name"
+              maxLength={24}
+              required
+            />
+            <button type="submit">Continue</button>
+          </form>
+        </section>
+      ) : (
+        <>
+          {!currentUser.tasks?.length ? (
+            <section className="panel">
+              <h2>Build your 75-day rules</h2>
+              <p>Add one daily rule per line.</p>
+              <form onSubmit={saveChallenge} className="form-stack">
+                <textarea
+                  value={taskInput}
+                  onChange={(event) => setTaskInput(event.target.value)}
+                  placeholder={'Workout 30 min\nRead 10 pages\nStudy Japanese'}
+                  rows={6}
+                  required
+                />
+                <button type="submit" disabled={!isFirebaseConfigured}>
+                  Save challenge
+                </button>
+              </form>
+            </section>
+          ) : (
+            <section className="panel">
+              <h2>Today&apos;s checklist ({name})</h2>
+              <ul className="task-list">
+                {currentUser.tasks.map((task) => {
+                  const checked = currentUser.daily?.[todayKey]?.[task.id] === true
+                  return (
+                    <li key={task.id}>
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleTask(task.id)}
+                        />
+                        <span>{task.text}</span>
+                      </label>
+                    </li>
+                  )
+                })}
+              </ul>
+            </section>
+          )}
+
+          <section className="panel">
+            <h2>Room progress</h2>
+            <p className="room-id">Room: {roomId}</p>
+            <div className="player-grid">
+              {users.length === 0 && <p>No players synced yet.</p>}
+              {users.map((user) => {
+                const stats = getUserStats(user)
+                return (
+                  <article key={user.id} className="player-card">
+                    <h3>{user.name}</h3>
+                    <p>Day {stats.currentDay} / {stats.totalDays}</p>
+                    <p>Streak: {stats.streak} days</p>
+                    <p>Today: {stats.todayProgressText}</p>
+                    <p className={stats.completeToday ? 'ok' : 'pending'}>
+                      {stats.completeToday ? 'All tasks done ✅' : 'Still in progress ⏳'}
+                    </p>
+                  </article>
+                )
+              })}
+            </div>
+          </section>
+        </>
+      )}
+    </main>
+  )
+}
+
+export default App
