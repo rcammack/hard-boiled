@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { onValue, ref, set, update } from 'firebase/database'
 import './App.css'
+import { CalendarModal } from './CalendarModal'
 import { createTaskList, getDateKey, getUserStats, reconcileMissedDays } from './challenge'
 import { database, isFirebaseConfigured } from './firebase'
 import { generateId } from './id'
@@ -78,6 +79,7 @@ function App() {
   const [nameInput, setNameInput] = useState('')
   const [taskInput, setTaskInput] = useState('')
   const [copyStatus, setCopyStatus] = useState('')
+  const [calendarOpen, setCalendarOpen] = useState(false)
 
   const keys = useMemo(() => storageKeys(roomId), [roomId])
 
@@ -310,7 +312,17 @@ function App() {
             </section>
           ) : (
             <section className="panel">
-              <h2>Today&apos;s checklist ({name})</h2>
+              <div className="checklist-header">
+                <h2>Today&apos;s checklist ({name})</h2>
+                <button
+                  type="button"
+                  className="secondary-btn icon-btn"
+                  onClick={() => setCalendarOpen(true)}
+                  aria-label="Open calendar"
+                >
+                  📅
+                </button>
+              </div>
               <ul className="task-list">
                 {currentUser.tasks.map((task) => {
                   const checked = currentUser.daily?.[todayKey]?.[task.id] === true
@@ -354,6 +366,16 @@ function App() {
             </div>
           </section>
         </>
+      )}
+      {calendarOpen && (
+        <CalendarModal
+          user={currentUser}
+          roomId={roomId}
+          userId={userId}
+          database={database}
+          isFirebaseConfigured={isFirebaseConfigured}
+          onClose={() => setCalendarOpen(false)}
+        />
       )}
       <FarmScene />
     </main>
