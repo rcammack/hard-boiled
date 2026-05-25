@@ -12,6 +12,45 @@ function randomId() {
   return generateId('user')
 }
 
+function Barn() {
+  return (
+    <svg width="52" height="56" viewBox="0 0 52 56" aria-hidden="true" className="barn-svg">
+      <polygon points="0,24 26,0 52,24" fill="#7B1818" />
+      <polygon points="18,24 26,16 34,24" fill="#5C1010" />
+      <rect x="2" y="23" width="48" height="33" fill="#A83232" />
+      <rect x="5" y="27" width="11" height="11" rx="1" fill="#6B3A1F" />
+      <rect x="36" y="27" width="11" height="11" rx="1" fill="#6B3A1F" />
+      <rect x="18" y="37" width="16" height="19" rx="2" fill="#6B3A1F" />
+    </svg>
+  )
+}
+
+function FarmScene() {
+  return (
+    <div className="farm-scene" aria-hidden="true">
+      <span className="farm-item" style={{ fontSize: '1.6rem' }}>🌾</span>
+      <span className="farm-item" style={{ fontSize: '2rem' }}>🌻</span>
+      <span className="farm-item" style={{ fontSize: '2.2rem' }}>🐄</span>
+      <span className="farm-item" style={{ fontSize: '1.5rem' }}>🌿</span>
+      <Barn />
+      <span className="farm-item" style={{ fontSize: '1.5rem' }}>🌿</span>
+      <span className="farm-item" style={{ fontSize: '2.2rem' }}>🐄</span>
+      <span className="farm-item" style={{ fontSize: '1.8rem' }}>🐓</span>
+      <span className="farm-item" style={{ fontSize: '1.6rem' }}>🌾</span>
+      <span className="farm-item" style={{ fontSize: '2rem' }}>🌻</span>
+    </div>
+  )
+}
+
+function getProgressEmoji(currentDay, totalDays) {
+  const pct = currentDay / totalDays
+  if (pct < 0.2) return '🥚'
+  if (pct < 0.4) return '🐣'
+  if (pct < 0.67) return '🐤'
+  if (pct < 0.87) return '🐥'
+  return '🐔'
+}
+
 function ensureRoomId() {
   const url = new URL(window.location.href)
   const existing = url.searchParams.get('room')
@@ -185,7 +224,7 @@ function App() {
     <main className="app-shell">
       <header className="top-bar">
         <div>
-          <h1>Hard Boiled</h1>
+          <h1>🥚 Hard Boiled</h1>
           <p>Two-player 75 Day Hard challenge tracker</p>
         </div>
         <button type="button" onClick={copyRoomLink} className="secondary-btn">
@@ -301,13 +340,14 @@ function App() {
                 const stats = getUserStats(user)
                 return (
                   <article key={user.id} className="player-card">
+                    <div className="player-card-emoji" aria-hidden="true">
+                      {getProgressEmoji(stats.currentDay, stats.totalDays)}
+                    </div>
                     <h3>{user.name}</h3>
                     <p>Day {stats.currentDay} / {stats.totalDays}</p>
                     <p>Streak: {stats.streak} days</p>
                     <p>Today: {stats.todayProgressText}</p>
-                    <p className={stats.completeToday ? 'ok' : 'pending'}>
-                      {stats.completeToday ? 'All tasks done ✅' : 'Still in progress ⏳'}
-                    </p>
+                    {stats.completeToday && <p className="ok">All tasks done ✅</p>}
                   </article>
                 )
               })}
@@ -315,6 +355,7 @@ function App() {
           </section>
         </>
       )}
+      <FarmScene />
     </main>
   )
 }
