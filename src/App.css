@@ -121,6 +121,21 @@ button:disabled {
   gap: 0.75rem;
 }
 
+.player-select-btn {
+  width: 100%;
+  padding: 1rem;
+  font-size: 1.1rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.player-select-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
 .player-card {
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 0.75rem;
@@ -151,4 +166,20 @@ button:disabled {
   .player-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+}
+
+.loader-panel {
+  text-align: center;
+  padding: 2.5rem 1rem;
+}
+
+.egg-loader {
+  font-size: 3rem;
+  animation: wobble 0.8s ease-in-out infinite;
+  display: inline-block;
+}
+
+@keyframes wobble {
+  0%, 100% { transform: rotate(-10deg) scale(1); }
+  50% { transform: rotate(10deg) scale(1.15); }
 }

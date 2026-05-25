@@ -44,6 +44,9 @@ function App() {
 
   const [userId, setUserId] = useState(() => localStorage.getItem(keys.userId) ?? '')
   const [name, setName] = useState(() => localStorage.getItem(keys.name) ?? '')
+  const [joiningAsNew, setJoiningAsNew] = useState(false)
+
+  const [loading, setLoading] = useState(isFirebaseConfigured)
 
   useEffect(() => {
     if (!isFirebaseConfigured || !database) {
@@ -54,6 +57,7 @@ function App() {
 
     const unsubscribe = onValue(roomRef, (snapshot) => {
       setRoomData(snapshot.val() ?? { users: {} })
+      setLoading(false)
     })
 
     return () => unsubscribe()
@@ -113,6 +117,14 @@ function App() {
     setName(value)
     setUserId(resolvedUserId)
     setNameInput('')
+    setJoiningAsNew(false)
+  }
+
+  const joinAsExisting = (existingUser) => {
+    localStorage.setItem(keys.name, existingUser.name)
+    localStorage.setItem(keys.userId, existingUser.id)
+    setName(existingUser.name)
+    setUserId(existingUser.id)
   }
 
   const saveChallenge = (event) => {
@@ -190,20 +202,53 @@ function App() {
         </section>
       )}
 
-      {!name ? (
+      {loading ? (
+        <section className="panel loader-panel">
+          <div className="egg-loader">🥚</div>
+          <p>Hatching your challenge...</p>
+        </section>
+      ) : !name ? (
         <section className="panel">
-          <h2>Choose your player name</h2>
-          <form onSubmit={saveName} className="form-stack">
-            <input
-              type="text"
-              value={nameInput}
-              onChange={(event) => setNameInput(event.target.value)}
-              placeholder="Your name"
-              maxLength={24}
-              required
-            />
-            <button type="submit">Continue</button>
-          </form>
+          {users.length > 0 && !joiningAsNew ? (
+            <>
+              <h2>Who are you?</h2>
+              <div className="player-grid">
+                {users.map((user) => (
+                  <button
+                    key={user.id}
+                    type="button"
+                    className="player-select-btn"
+                    onClick={() => joinAsExisting(user)}
+                  >
+                    {user.name}
+                  </button>
+                ))}
+              </div>
+              <button type="button" className="secondary-btn" onClick={() => setJoiningAsNew(true)}>
+                Join as new person
+              </button>
+            </>
+          ) : (
+            <>
+              <h2>Choose your player name</h2>
+              <form onSubmit={saveName} className="form-stack">
+                <input
+                  type="text"
+                  value={nameInput}
+                  onChange={(event) => setNameInput(event.target.value)}
+                  placeholder="Your name"
+                  maxLength={24}
+                  required
+                />
+                <button type="submit">Continue</button>
+              </form>
+              {users.length > 0 && (
+                <button type="button" className="secondary-btn" onClick={() => setJoiningAsNew(false)}>
+                  ← Back
+                </button>
+              )}
+            </>
+          )}
         </section>
       ) : (
         <>
