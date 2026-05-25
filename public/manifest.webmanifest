@@ -2,10 +2,10 @@
   "name": "Hard Boiled",
   "short_name": "Hard Boiled",
   "description": "Two-player custom 75 Day Hard challenge tracker",
-  "start_url": "/",
+  "start_url": "/hard-boiled/",
   "display": "standalone",
-  "background_color": "#11131a",
-  "theme_color": "#11131a",
+  "background_color": "#b8dff5",
+  "theme_color": "#b8dff5",
   "icons": [
     {
       "src": "/icons/icon-192.png",
