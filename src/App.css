@@ -24,7 +24,7 @@ body {
 .app-shell {
   max-width: 52rem;
   margin: 0 auto;
-  padding: 1rem;
+  padding: calc(env(safe-area-inset-top, 0px) + 1rem) 1rem 1rem;
   display: grid;
   gap: 1rem;
 }
@@ -254,7 +254,7 @@ button:disabled {
 
 @media (min-width: 700px) {
   .app-shell {
-    padding: 2rem;
+    padding: calc(env(safe-area-inset-top, 0px) + 2rem) 2rem 2rem;
   }
 
   .player-grid {
