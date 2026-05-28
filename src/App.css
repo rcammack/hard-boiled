@@ -117,8 +117,10 @@ button:disabled {
   font-weight: 500;
 }
 
-.secondary-btn:hover {
-  background: rgba(245, 197, 24, 0.18);
+.secondary-btn:hover,
+.secondary-btn:active {
+  background: #e8d88a;
+  border-color: rgba(160, 120, 20, 0.7);
 }
 
 .task-list {
@@ -615,12 +617,14 @@ button:disabled {
 
 .leave-btn {
   font-size: 0.85rem;
-  opacity: 0.6;
-  border-color: rgba(160, 80, 20, 0.35);
+  border-color: #c06040;
   color: #7a3010;
+  background: #f5e0d8;
 }
 
-.leave-btn:hover {
-  opacity: 1;
-  background: rgba(200, 80, 20, 0.08);
+.leave-btn:hover,
+.leave-btn:active {
+  background: #e8c8bc;
+  border-color: #a04828;
+  color: #5a1e08;
 }

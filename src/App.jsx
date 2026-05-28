@@ -460,8 +460,7 @@ function App() {
                     <h3>{user.name}</h3>
                     <p>Day {stats.currentDay} / {stats.totalDays}</p>
                     <p>Streak: {stats.streak} days</p>
-                    <p>Today: {stats.todayProgressText}</p>
-                    {stats.completeToday && <p className="ok">All tasks done ✅</p>}
+                    <p>Today: {stats.todayProgressText}{stats.completeToday ? ' ✅' : ''}</p>
                   </article>
                 )
               })}
