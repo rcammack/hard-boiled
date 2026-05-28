@@ -435,3 +435,86 @@ button:disabled {
   gap: 0.75rem;
   overflow-y: auto;
 }
+
+/* ── Landing screen ────────────────────────────────────── */
+
+.landing-panel {
+  gap: 1rem;
+  text-align: center;
+}
+
+.landing-btn,
+.join-form {
+  max-width: 420px;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.join-form input,
+.join-form button {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.divider {
+  text-align: center;
+  font-size: 0.85rem;
+  color: #7a6030;
+  position: relative;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 40%;
+  height: 1px;
+  background: rgba(160, 120, 20, 0.25);
+}
+
+.divider::before { left: 0; }
+.divider::after  { right: 0; }
+
+.join-error {
+  color: #b03030;
+  font-size: 0.85rem;
+}
+
+.recent-label {
+  font-size: 0.85rem;
+  color: #7a6030;
+  margin-top: 0.25rem;
+}
+
+.recent-rooms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.recent-rooms .secondary-btn {
+  font-family: monospace;
+  font-size: 0.9rem;
+}
+
+/* ── Leave room ────────────────────────────────────────── */
+
+.leave-room-wrap {
+  display: flex;
+  justify-content: center;
+  padding-bottom: 0.5rem;
+}
+
+.leave-btn {
+  font-size: 0.85rem;
+  opacity: 0.6;
+  border-color: rgba(160, 80, 20, 0.35);
+  color: #7a3010;
+}
+
+.leave-btn:hover {
+  opacity: 1;
+  background: rgba(200, 80, 20, 0.08);
+}

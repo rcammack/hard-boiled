@@ -52,18 +52,42 @@ function getProgressEmoji(currentDay, totalDays) {
   return '🐔'
 }
 
-function ensureRoomId() {
+function getRoomIdFromUrl() {
+  return new URL(window.location.href).searchParams.get('room') ?? null
+}
+
+function setRoomInUrl(roomId) {
   const url = new URL(window.location.href)
-  const existing = url.searchParams.get('room')
-
-  if (existing) {
-    return existing
-  }
-
-  const roomId = generateId('room').slice(-8)
   url.searchParams.set('room', roomId)
   window.history.replaceState({}, '', url)
-  return roomId
+}
+
+function clearRoomFromUrl() {
+  const url = new URL(window.location.href)
+  url.searchParams.delete('room')
+  window.history.replaceState({}, '', url)
+}
+
+function getLastRoom() {
+  return localStorage.getItem('hard-boiled:last-room') ?? null
+}
+
+function getRecentRooms() {
+  try {
+    return JSON.parse(localStorage.getItem('hard-boiled:recent-rooms') ?? '[]')
+  } catch {
+    return []
+  }
+}
+
+function saveRecentRoom(roomId) {
+  localStorage.setItem('hard-boiled:last-room', roomId)
+  const recent = [roomId, ...getRecentRooms().filter((r) => r !== roomId)].slice(0, 3)
+  localStorage.setItem('hard-boiled:recent-rooms', JSON.stringify(recent))
+}
+
+function getInitialRoomId() {
+  return getRoomIdFromUrl() ?? getLastRoom()
 }
 
 function storageKeys(roomId) {
@@ -74,23 +98,64 @@ function storageKeys(roomId) {
 }
 
 function App() {
-  const [roomId] = useState(() => ensureRoomId())
+  const [roomId, setRoomId] = useState(() => getInitialRoomId())
+  const [joinInput, setJoinInput] = useState('')
+  const [joinError, setJoinError] = useState('')
   const [roomData, setRoomData] = useState({ users: {} })
   const [nameInput, setNameInput] = useState('')
   const [taskInput, setTaskInput] = useState('')
   const [copyStatus, setCopyStatus] = useState('')
   const [calendarOpen, setCalendarOpen] = useState(false)
 
-  const keys = useMemo(() => storageKeys(roomId), [roomId])
+  const keys = useMemo(() => storageKeys(roomId ?? ''), [roomId])
 
   const [userId, setUserId] = useState(() => localStorage.getItem(keys.userId) ?? '')
   const [name, setName] = useState(() => localStorage.getItem(keys.name) ?? '')
   const [joiningAsNew, setJoiningAsNew] = useState(false)
 
-  const [loading, setLoading] = useState(isFirebaseConfigured)
+  const [loading, setLoading] = useState(!!roomId && isFirebaseConfigured)
+
+  const enterRoom = (id) => {
+    setRoomInUrl(id)
+    saveRecentRoom(id)
+    setRoomId(id)
+    setLoading(isFirebaseConfigured)
+  }
+
+  const leaveRoom = () => {
+    localStorage.removeItem('hard-boiled:last-room')
+    clearRoomFromUrl()
+    setRoomId(null)
+    setRoomData({ users: {} })
+    setName('')
+    setUserId('')
+    setLoading(false)
+  }
 
   useEffect(() => {
-    if (!isFirebaseConfigured || !database) {
+    if (roomId) saveRecentRoom(roomId)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const createRoom = () => {
+    const id = generateId('room').slice(-8)
+    enterRoom(id)
+  }
+
+  const joinRoom = (e) => {
+    e.preventDefault()
+    const code = joinInput.trim().toLowerCase()
+    if (!code) return
+    if (code.length < 4) {
+      setJoinError('Room code looks too short — check the link and try again.')
+      return
+    }
+    setJoinError('')
+    enterRoom(code)
+  }
+
+  useEffect(() => {
+    if (!roomId || !isFirebaseConfigured || !database) {
       return undefined
     }
 
@@ -229,9 +294,11 @@ function App() {
           <h1>🥚 Hard Boiled</h1>
           <p>Two-player 75 Day Hard challenge tracker</p>
         </div>
-        <button type="button" onClick={copyRoomLink} className="secondary-btn">
-          Share room
-        </button>
+        {roomId && (
+          <button type="button" onClick={copyRoomLink} className="secondary-btn">
+            Share room
+          </button>
+        )}
       </header>
 
       {copyStatus && <p className="status-pill">{copyStatus}</p>}
@@ -243,7 +310,40 @@ function App() {
         </section>
       )}
 
-      {loading ? (
+      {!roomId ? (
+        <section className="panel landing-panel">
+          <h2>Welcome to Hard Boiled 🥚</h2>
+          <button type="button" className="landing-btn" onClick={createRoom}>
+            🐣 Create new room
+          </button>
+          <div className="divider">or</div>
+          <form onSubmit={joinRoom} className="form-stack join-form">
+            <input
+              type="text"
+              value={joinInput}
+              onChange={(e) => { setJoinInput(e.target.value); setJoinError('') }}
+              placeholder="Enter room code"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+            />
+            {joinError && <p className="join-error">{joinError}</p>}
+            <button type="submit">Join room</button>
+          </form>
+          {getRecentRooms().length > 0 && (
+            <>
+              <p className="recent-label">Recent rooms</p>
+              <div className="recent-rooms">
+                {getRecentRooms().map((r) => (
+                  <button key={r} type="button" className="secondary-btn" onClick={() => enterRoom(r)}>
+                    {r}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </section>
+      ) : loading ? (
         <section className="panel loader-panel">
           <div className="egg-loader">🥚</div>
           <p>Hatching your challenge...</p>
@@ -376,6 +476,13 @@ function App() {
           isFirebaseConfigured={isFirebaseConfigured}
           onClose={() => setCalendarOpen(false)}
         />
+      )}
+      {roomId && (
+        <div className="leave-room-wrap">
+          <button type="button" className="secondary-btn leave-btn" onClick={leaveRoom}>
+            Leave room
+          </button>
+        </div>
       )}
       <FarmScene />
     </main>
