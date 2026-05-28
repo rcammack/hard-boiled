@@ -144,7 +144,7 @@ export function CalendarModal({ user, roomId, userId, database, isFirebaseConfig
                   {weeks.flat().map((dateKey, i) => {
                     if (!dateKey) return <div key={`empty-${i}`} className="cal-day cal-empty" />
                     const status = getDayStatus(user, dateKey, startDateKey, todayKey)
-                    const clickable = status !== 'outside'
+                    const clickable = status !== 'outside' && dateKey < todayKey
                     return (
                       <button
                         key={dateKey}

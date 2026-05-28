@@ -289,6 +289,7 @@ function App() {
   }
 
   return (
+    <>
     <main className="app-shell">
       <header className="top-bar">
         <div>
@@ -478,15 +479,16 @@ function App() {
           onClose={() => setCalendarOpen(false)}
         />
       )}
-      {roomId && (
+      {roomId && !loading && (
         <div className="leave-room-wrap">
           <button type="button" className="secondary-btn leave-btn" onClick={leaveRoom}>
             Leave room
           </button>
         </div>
       )}
-      <FarmScene />
     </main>
+    <FarmScene />
+    </>
   )
 }
 

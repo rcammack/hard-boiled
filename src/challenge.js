@@ -50,18 +50,9 @@ export function reconcileMissedDays(user, today = new Date()) {
   const yesterday = addDays(new Date(today.getFullYear(), today.getMonth(), today.getDate()), -1)
   const yesterdayKey = getDateKey(yesterday)
 
-  const lastEvaluatedDate = user.progress?.lastEvaluatedDate
+  // Always recalculate from scratch so retroactive calendar edits are reflected
+  let extraDays = 0
   let cursor = fromDateKey(startDate)
-
-  if (lastEvaluatedDate) {
-    cursor = addDays(fromDateKey(lastEvaluatedDate), 1)
-  }
-
-  if (cursor > yesterday) {
-    return null
-  }
-
-  let extraDays = user.progress?.extraDays ?? 0
 
   while (cursor <= yesterday) {
     const dateKey = getDateKey(cursor)
@@ -75,8 +66,7 @@ export function reconcileMissedDays(user, today = new Date()) {
   if (extraDays !== (user.progress?.extraDays ?? 0)) {
     updates.extraDays = extraDays
   }
-
-  if (lastEvaluatedDate !== yesterdayKey) {
+  if ((user.progress?.lastEvaluatedDate ?? '') !== yesterdayKey) {
     updates.lastEvaluatedDate = yesterdayKey
   }
 
@@ -101,7 +91,7 @@ export function getUserStats(user, today = new Date()) {
   const currentDay = Math.min(totalDays, Math.max(1, elapsed))
 
   let streak = 0
-  let cursor = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+  let cursor = addDays(new Date(today.getFullYear(), today.getMonth(), today.getDate()), -1)
 
   while (isDayComplete(user, getDateKey(cursor))) {
     streak += 1
