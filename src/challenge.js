@@ -54,6 +54,10 @@ export function reconcileMissedDays(user, today = new Date()) {
   let extraDays = 0
   let cursor = fromDateKey(startDate)
 
+  if (cursor > yesterday) {
+    return null
+  }
+
   while (cursor <= yesterday) {
     const dateKey = getDateKey(cursor)
     if (!isDayComplete(user, dateKey)) {

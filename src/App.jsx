@@ -6,6 +6,7 @@ import { RaceTrack } from './RaceTrack'
 import { createTaskList, getDateKey, getUserStats, reconcileMissedDays } from './challenge'
 import { database, isFirebaseConfigured } from './firebase'
 import { generateId } from './id'
+import { getLastRoom, getRecentRooms, saveRecentRoom, storageKeys, validateJoinCode } from './room'
 
 function randomId() {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
@@ -69,34 +70,10 @@ function clearRoomFromUrl() {
   window.history.replaceState({}, '', url)
 }
 
-function getLastRoom() {
-  return localStorage.getItem('hard-boiled:last-room') ?? null
-}
-
-function getRecentRooms() {
-  try {
-    return JSON.parse(localStorage.getItem('hard-boiled:recent-rooms') ?? '[]')
-  } catch {
-    return []
-  }
-}
-
-function saveRecentRoom(roomId) {
-  localStorage.setItem('hard-boiled:last-room', roomId)
-  const recent = [roomId, ...getRecentRooms().filter((r) => r !== roomId)].slice(0, 3)
-  localStorage.setItem('hard-boiled:recent-rooms', JSON.stringify(recent))
-}
-
 function getInitialRoomId() {
   return getRoomIdFromUrl() ?? getLastRoom()
 }
 
-function storageKeys(roomId) {
-  return {
-    name: `hard-boiled:name:${roomId}`,
-    userId: `hard-boiled:user-id:${roomId}`,
-  }
-}
 
 function App() {
   const [roomId, setRoomId] = useState(() => getInitialRoomId())
@@ -145,14 +122,13 @@ function App() {
 
   const joinRoom = (e) => {
     e.preventDefault()
-    const code = joinInput.trim().toLowerCase()
-    if (!code) return
-    if (code.length < 4) {
-      setJoinError('Room code looks too short — check the link and try again.')
+    const result = validateJoinCode(joinInput)
+    if (!result.valid) {
+      if (result.error) setJoinError(result.error)
       return
     }
     setJoinError('')
-    enterRoom(code)
+    enterRoom(result.code)
   }
 
   useEffect(() => {
