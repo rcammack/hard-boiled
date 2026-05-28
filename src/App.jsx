@@ -270,7 +270,7 @@ function App() {
       <header className="top-bar">
         <div>
           <h1>🥚 Hard Boiled</h1>
-          <p>Two-player 75 Day Hard challenge tracker</p>
+          <p>75 Day Hard challenge tracker</p>
         </div>
         {roomId && (
           <button type="button" onClick={copyRoomLink} className="secondary-btn">
