@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { onValue, ref, set, update } from 'firebase/database'
 import './App.css'
 import { CalendarModal } from './CalendarModal'
+import { RaceTrack } from './RaceTrack'
 import { createTaskList, getDateKey, getUserStats, reconcileMissedDays } from './challenge'
 import { database, isFirebaseConfigured } from './firebase'
 import { generateId } from './id'
@@ -446,6 +447,7 @@ function App() {
           <section className="panel">
             <h2>Room progress</h2>
             <p className="room-id">Room: {roomId}</p>
+            <RaceTrack users={users} />
             <div className="player-grid">
               {users.length === 0 && <p>No players synced yet.</p>}
               {users.map((user) => {
